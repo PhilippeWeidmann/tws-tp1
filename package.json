@@ -8,5 +8,9 @@
     "test": "nodemon index.js"
   },
   "author": "Philippe & Milo",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "fast-xml-parser": "^3.17.4",
+    "uuid": "^8.3.1"
+  }
 }
