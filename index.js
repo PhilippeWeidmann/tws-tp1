@@ -1,6 +1,7 @@
 const parser = require('fast-xml-parser');
 const fs = require('fs');
 const {v4: uuid} = require('uuid');
+const axios = require('axios').default;
 
 const schemeHeader = "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n" +
     "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.\n" +
@@ -59,15 +60,59 @@ function generateGraphDBScheme(gpx) {
     return schemeString;
 }
 
+async function fetchOSMData(bounds) {
+    let response = await axios.get('https://api.openstreetmap.org/api/0.6/map?bbox=' + bounds.bottomLeft.lon + ',' + bounds.bottomLeft.lat + ',' + bounds.topRight.lon + ',' + bounds.topRight.lat);
+    let elements = response.data.elements;
+    let filteredElements = [];
+    if (elements) {
+        elements.forEach(element => {
+            if (element.type === 'node' && element.tags && (element.tags.tourism || element.tags.natural || element.tags.amenity || element.tags.sport)) {
+                filteredElements.push({id: element.id, lat: element.lat, lon: element.lon, tags: element.tags});
+            }
+        });
+    }
+    return filteredElements;
+}
+
+function findBounds(points) {
+    let topRightPoint = points[0];
+    let bottomLeftPoint = points[1];
+    points.forEach((point) => {
+        if (point.lat >= topRightPoint.lat) {
+            topRightPoint.lat = point.lat;
+        }
+        if (point.lon >= topRightPoint.lon) {
+            topRightPoint.lon = point.lon;
+        }
+        if (point.lat <= bottomLeftPoint.lat) {
+            bottomLeftPoint.lat = point.lat;
+        }
+        if (point.lon <= bottomLeftPoint.lon) {
+            bottomLeftPoint.lon = point.lon;
+        }
+    });
+
+    return {topRight: topRightPoint, bottomLeft: bottomLeftPoint};
+}
+
 fs.readFile('gpx/4sDDFdd4cjA.gpx', 'utf8', function (err, data) {
     if (err) {
         return console.log(err);
     }
     let root = parser.getTraversalObj(data, {ignoreAttributes: false});
     let parsedGpx = parseGPX(root);
-    let result = generateGraphDBScheme(parsedGpx);
-    fs.writeFile('gpx.ttl', result, function (err) {
-        if (err) throw err;
-        console.log('Saved!');
+    let bounds = findBounds(parsedGpx.trackPoints);
+    fetchOSMData(bounds).then(result => {
+        let scheme = generateGraphDBScheme(parsedGpx);
+        fs.writeFile('gpx.ttl', scheme, function (err) {
+            if (err) throw err;
+            console.log('Saved!');
+        });
+        fs.writeFile('result.json', JSON.stringify(result), function (err) {
+            if (err) throw err;
+            console.log('Saved!');
+        });
+
     });
+
 });
