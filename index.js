@@ -95,6 +95,43 @@ function findBounds(points) {
     return {topRight: topRightPoint, bottomLeft: bottomLeftPoint};
 }
 
+function linkPOIsNearTrack(points, pois) {
+    pois.forEach(poi => {
+        let nearestPoint;
+        let nearestDistance = Number.MAX_VALUE;
+
+        points.forEach(point => {
+            let distance = distanceBetweenPoints(point.lat, point.lon, poi.lat, poi.lon);
+            if (distance < 0.5 && distance < nearestDistance) {
+                nearestPoint = point;
+                nearestDistance = distance;
+            }
+        });
+        if (nearestPoint) {
+            nearestPoint.poi = poi;
+        }
+    });
+}
+
+//distance between point in KM -> https://stackoverflow.com/questions/18883601/function-to-calculate-distance-between-two-coordinates
+function distanceBetweenPoints(lat1, lon1, lat2, lon2) {
+    let R = 6371; // km
+    let dLat = toRad(lat2 - lat1);
+    let dLon = toRad(lon2 - lon1);
+    var lat1 = toRad(lat1);
+    var lat2 = toRad(lat2);
+
+    let a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    let d = R * c;
+    return d;
+}
+
+function toRad(Value) {
+    return Value * Math.PI / 180;
+}
+
 fs.readFile('gpx/4sDDFdd4cjA.gpx', 'utf8', function (err, data) {
     if (err) {
         return console.log(err);
@@ -102,13 +139,11 @@ fs.readFile('gpx/4sDDFdd4cjA.gpx', 'utf8', function (err, data) {
     let root = parser.getTraversalObj(data, {ignoreAttributes: false});
     let parsedGpx = parseGPX(root);
     let bounds = findBounds(parsedGpx.trackPoints);
-    fetchOSMData(bounds).then(result => {
+    fetchOSMData(bounds).then(osmPOIs => {
+        linkPOIsNearTrack(parsedGpx.trackPoints, osmPOIs)
+        //TODO: generate scheme with linked POIs
         let scheme = generateGraphDBScheme(parsedGpx);
         fs.writeFile('gpx.ttl', scheme, function (err) {
-            if (err) throw err;
-            console.log('Saved!');
-        });
-        fs.writeFile('result.json', JSON.stringify(result), function (err) {
             if (err) throw err;
             console.log('Saved!');
         });
