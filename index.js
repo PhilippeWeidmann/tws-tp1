@@ -13,6 +13,7 @@ console.log("TWS converter");
 
 function parseGPX(gpxFile) {
     let trackPoints = gpxFile.child.gpx[0].child.trk[0];
+    let waypoints = gpxFile.child.gpx[0].child.wpt;
     let trackName = trackPoints.child.name[0].val;
     let points = trackPoints.child.trkseg[0].child.trkpt;
 
@@ -26,12 +27,26 @@ function parseGPX(gpxFile) {
         parsedPoints.push(parsedPoint);
     });
 
+    waypoints.forEach(waypoint => {
+        let parsedWaypoint = {
+            lat: Number(waypoint.attrsMap["@_lat"]),
+            lon: Number(waypoint.attrsMap["@_lon"]),
+            ele: waypoint.child.ele[0].val,
+            name: waypoint.child.name[0].val
+        };
+        parsedPoints.forEach(point => {
+            if (point.lat === parsedWaypoint.lat && point.lon === parsedWaypoint.lon) {
+                point.waypoint = parsedWaypoint;
+            }
+        });
+    });
+
     return {name: trackName, trackPoints: parsedPoints};
 }
 
 function generateGraphDBPoint(point) {
     let pointId = ':swt-trkpt-' + uuid();
-    let schemeString = pointId + ' a :trkpt . \n';
+    let schemeString = pointId + ' a :Trackpoint . \n';
     schemeString += pointId + ' :lat ' + point.lat + ' .\n';
     schemeString += pointId + ' :lon ' + point.lon + ' .\n';
     schemeString += pointId + ' :ele ' + point.ele + ' .\n';
@@ -40,14 +55,26 @@ function generateGraphDBPoint(point) {
         schemeString += generatedPOI.value;
         schemeString += pointId + ' :hasClosePOI ' + generatedPOI.id + ' .\n';
     }
+    if (point.waypoint) {
+        let generatedWaypoint = generateGraphDBWaypoint(point.waypoint);
+        schemeString += generatedWaypoint.value;
+        schemeString += pointId + ' :hasWaypoint ' + generatedWaypoint.id + ' .\n';
+    }
 
     return {id: pointId, value: schemeString};
 }
 
+function generateGraphDBWaypoint(waypoint) {
+    let waypointId = ':swt-wpt-' + uuid();
+    let schemeString = waypointId + ' a :Waypoint . \n';
+    schemeString += waypointId + ' :name "' + waypoint.name + '" .\n';
+
+    return {id: waypointId, value: schemeString};
+}
 
 function generateGraphDBPoi(poi) {
     let poiId = ':swt-poi-' + poi.id;
-    let schemeString = poiId + ' a :poi . \n';
+    let schemeString = poiId + ' a :POI . \n';
     schemeString += poiId + ' :lat ' + poi.lat + ' .\n';
     schemeString += poiId + ' :lon ' + poi.lon + ' .\n';
     if (poi.tags.name) {
@@ -75,7 +102,7 @@ function generateGraphDBScheme(gpx) {
         pointsScheme += graphDbPoint.value + "\n";
         pointIds.push(graphDbPoint.id);
     });
-    let schemeString = schemeHeader + pointsScheme + trackId + ' a :trk . \n';
+    let schemeString = schemeHeader + pointsScheme + trackId + ' a :Track . \n';
     schemeString += trackId + ' :name "' + gpx.name + '" .\n';
     schemeString += ':trackpoints a rdf:Seq .\n';
 
