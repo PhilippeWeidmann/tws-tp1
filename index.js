@@ -35,9 +35,36 @@ function generateGraphDBPoint(point) {
     schemeString += pointId + ' :lat ' + point.lat + ' .\n';
     schemeString += pointId + ' :lon ' + point.lon + ' .\n';
     schemeString += pointId + ' :ele ' + point.ele + ' .\n';
+    if (point.poi) {
+        let generatedPOI = generateGraphDBPoi(point.poi);
+        schemeString += generatedPOI.value;
+        schemeString += pointId + ' :hasClosePOI ' + generatedPOI.id + ' .\n';
+    }
 
     return {id: pointId, value: schemeString};
 }
+
+
+function generateGraphDBPoi(poi) {
+    let poiId = ':swt-poi-' + poi.id;
+    let schemeString = poiId + ' a :poi . \n';
+    schemeString += poiId + ' :lat ' + poi.lat + ' .\n';
+    schemeString += poiId + ' :lon ' + poi.lon + ' .\n';
+    if (poi.tags.name) {
+        schemeString += poiId + ' :name "' + poi.tags.name + '" .\n';
+        if (poi.tags.tourism) {
+            schemeString += poiId + ' :type "tourism" .\n';
+        } else if (poi.tags.natural) {
+            schemeString += poiId + ' :type "natural" .\n';
+        } else if (poi.tags.amenity) {
+            schemeString += poiId + ' :type "amenity" .\n';
+        } else if (poi.tags.sport) {
+            schemeString += poiId + ' :type "sport" .\n';
+        }
+    }
+    return {id: poiId, value: schemeString};
+}
+
 
 function generateGraphDBScheme(gpx) {
     let trackId = ':swt-trk-' + uuid();
@@ -132,7 +159,8 @@ function toRad(Value) {
     return Value * Math.PI / 180;
 }
 
-fs.readFile('gpx/4sDDFdd4cjA.gpx', 'utf8', function (err, data) {
+let gpxName = '4sDDFdd4cjA';
+fs.readFile('gpx/' + gpxName + '.gpx', 'utf8', function (err, data) {
     if (err) {
         return console.log(err);
     }
@@ -140,10 +168,9 @@ fs.readFile('gpx/4sDDFdd4cjA.gpx', 'utf8', function (err, data) {
     let parsedGpx = parseGPX(root);
     let bounds = findBounds(parsedGpx.trackPoints);
     fetchOSMData(bounds).then(osmPOIs => {
-        linkPOIsNearTrack(parsedGpx.trackPoints, osmPOIs)
-        //TODO: generate scheme with linked POIs
+        linkPOIsNearTrack(parsedGpx.trackPoints, osmPOIs);
         let scheme = generateGraphDBScheme(parsedGpx);
-        fs.writeFile('gpx.ttl', scheme, function (err) {
+        fs.writeFile('gpx-' + gpxName + '.ttl', scheme, function (err) {
             if (err) throw err;
             console.log('Saved!');
         });
