@@ -2,6 +2,7 @@ const parser = require('fast-xml-parser');
 const fs = require('fs');
 const {v4: uuid} = require('uuid');
 const axios = require('axios').default;
+const GraphDB = require('graphdb-js');
 
 const schemeHeader = "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n" +
     "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.\n" +
@@ -203,5 +204,19 @@ fs.readFile('gpx/' + gpxName + '.gpx', 'utf8', function (err, data) {
         });
 
     });
+});
 
+let graphdb = new GraphDB({
+    hostname: "localhost",
+    repository: "TWS-GPX"
+});
+
+const select = "PREFIX : <http://cui.unige.ch/>\n" +
+    "select ?a where {" +
+    "\t?a a :Track.\n" +
+    "} limit 100 \n";
+
+graphdb.Query.query(select, (err, data) => {
+    console.log(data);
+    console.log(err);
 });
