@@ -79,7 +79,8 @@ function generateGraphDBPoi(poi) {
     schemeString += poiId + ' :lat ' + poi.lat + ' .\n';
     schemeString += poiId + ' :lon ' + poi.lon + ' .\n';
     if (poi.tags.name) {
-        schemeString += poiId + ' :name "' + poi.tags.name + '" .\n';
+        let clearedName = poi.tags.name.replace(/"/g, "");
+        schemeString += poiId + ' :name "' + clearedName + '" .\n';
         if (poi.tags.tourism) {
             schemeString += poiId + ' :type "tourism" .\n';
         } else if (poi.tags.natural) {
@@ -187,36 +188,54 @@ function toRad(Value) {
     return Value * Math.PI / 180;
 }
 
-let gpxName = '4sDDFdd4cjA';
-fs.readFile('gpx/' + gpxName + '.gpx', 'utf8', function (err, data) {
-    if (err) {
-        return console.log(err);
-    }
-    let root = parser.getTraversalObj(data, {ignoreAttributes: false});
-    let parsedGpx = parseGPX(root);
-    let bounds = findBounds(parsedGpx.trackPoints);
-    fetchOSMData(bounds).then(osmPOIs => {
-        linkPOIsNearTrack(parsedGpx.trackPoints, osmPOIs);
-        let scheme = generateGraphDBScheme(parsedGpx);
-        fs.writeFile('gpx-' + gpxName + '.ttl', scheme, function (err) {
-            if (err) throw err;
-            console.log('Saved!');
+function generateSchemeForGpx(name) {
+    return new Promise((resolve, reject) => {
+        fs.readFile('gpx/' + name + '.gpx', 'utf8', function (err, data) {
+            if (err) {
+                reject(err);
+            } else {
+                let root = parser.getTraversalObj(data, {ignoreAttributes: false});
+                let parsedGpx = parseGPX(root);
+                let bounds = findBounds(parsedGpx.trackPoints);
+                fetchOSMData(bounds).then(osmPOIs => {
+                    linkPOIsNearTrack(parsedGpx.trackPoints, osmPOIs);
+                    let scheme = generateGraphDBScheme(parsedGpx);
+                    resolve(scheme);
+                });
+            }
         });
+    });
+}
 
+let gpxFiles = ['4sDDFdd4cjA', 'btSeByOExEc', 'kmrcRbHcMpg', 'PO21QxqG2co', 'pRAjjKqHwzQ', 'rx1-4gf5lts', 'tIRn_qJSB5s', 'UAQjXL9WRKY'];
+let promises = [];
+gpxFiles.forEach(file => {
+    promises.push(generateSchemeForGpx(file));
+});
+Promise.all(promises).then(gpxSchemes => {
+    let globalScheme = gpxSchemes.reduce((a, b) => a + '\n' + b, '');
+    fs.writeFile('scheme.ttl', globalScheme, function (err) {
+        if (err) throw err;
+        console.log('Saved!');
     });
 });
 
-let graphdb = new GraphDB({
+
+/*let graphdb = new GraphDB({
     hostname: "localhost",
     repository: "TWS-GPX"
 });
 
 const select = "PREFIX : <http://cui.unige.ch/>\n" +
-    "select ?a where {" +
-    "\t?a a :Track.\n" +
+    "select * where { \n" +
+    "\t?track a :Track.\n" +
+    "    ?track :name ?name.\n" +
+    "    ?track :trackpoints ?trackpoints.\n" +
+    "    ?trackpoints :lat ?lat.\n" +
+    "    ?trackpoints :lon ?lon.\n" +
     "} limit 100 \n";
 
 graphdb.Query.query(select, (err, data) => {
     console.log(data);
     console.log(err);
-});
+});*/
