@@ -2,7 +2,11 @@ const parser = require('fast-xml-parser');
 const fs = require('fs');
 const {v4: uuid} = require('uuid');
 const axios = require('axios').default;
-const GraphDB = require('graphdb-js');
+const SparqlClient = require('sparql-http-client')
+
+const express = require('express');
+const app = express();
+const port = 3000
 
 const schemeHeader = "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n" +
     "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.\n" +
@@ -207,6 +211,7 @@ function generateSchemeForGpx(name) {
     });
 }
 
+
 let gpxFiles = ['4sDDFdd4cjA', 'btSeByOExEc', 'kmrcRbHcMpg', 'PO21QxqG2co', 'pRAjjKqHwzQ', 'rx1-4gf5lts', 'tIRn_qJSB5s', 'UAQjXL9WRKY'];
 let promises = [];
 gpxFiles.forEach(file => {
@@ -220,22 +225,69 @@ Promise.all(promises).then(gpxSchemes => {
     });
 });
 
+const client = new SparqlClient({endpointUrl: 'http://localhost:7200/repositories/TWS-GPX'});
 
-/*let graphdb = new GraphDB({
-    hostname: "localhost",
-    repository: "TWS-GPX"
+app.listen(port, () => {
+})
+
+app.get('/tracks', function (req, res) {
+    const query = "PREFIX : <http://cui.unige.ch/>\n" +
+        "select * where { \n" +
+        "\t?track a :Track.\n" +
+        "    ?track :name ?name.\n" +
+        "} limit 100 \n";
+    client.query.select(query).then(stream => {
+        let rows = [];
+        stream.on('data', row => {
+            rows.push(row);
+        })
+
+        stream.on('finish', row => {
+            res.json(rows);
+        })
+
+        stream.on('error', err => {
+            console.error(err);
+        })
+    })
 });
 
-const select = "PREFIX : <http://cui.unige.ch/>\n" +
-    "select * where { \n" +
-    "\t?track a :Track.\n" +
-    "    ?track :name ?name.\n" +
-    "    ?track :trackpoints ?trackpoints.\n" +
-    "    ?trackpoints :lat ?lat.\n" +
-    "    ?trackpoints :lon ?lon.\n" +
-    "} limit 100 \n";
+app.get('/tracks/:id', function (req, res) {
+    const query = "PREFIX : <http://cui.unige.ch/>\n" +
+        "select * where { \n" +
+        "\t?track a :Track.\n" +
+        "    ?track :trackpoints ?trackpoints.\n" +
+        "    ?trackpoints :lat ?lat.\n" +
+        "    ?trackpoints :lon ?lon.\n" +
+        "    FILTER(regex(str(?track), \"" + req.params.id + "\" ) )\n" +
+        "} offset 0 limit 10 \n";
 
-graphdb.Query.query(select, (err, data) => {
-    console.log(data);
-    console.log(err);
-});*/
+    client.query.select(query).then(stream => {
+        let rows = [];
+        stream.on('data', row => {
+            rows.push(row);
+        })
+
+        stream.on('finish', row => {
+            res.json(rows);
+        })
+
+        stream.on('error', err => {
+            console.error(err);
+        })
+    })
+});
+
+app.get('/tracks/:id/dbpedia', function (req, res) {
+    const query = "SELECT DISTINCT * WHERE { \n" +
+        "?s geo:lat ?la . \n" +
+        "?s geo:long ?lo . \n" +
+        "?s dbo:place ?place .\n" +
+        "?place rdfs:label ?placeName.\n" +
+        "FILTER(regex(str(?placeName), \"Premier Empire\")) . } LIMIT 100";
+    axios.get('http://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=' + query).then((result) => {
+        res.json(result.data.results.bindings);
+    });
+
+
+});
