@@ -277,7 +277,7 @@ app.get('/tracks/:id', function (req, res) {
         "        ?poi :name ?poiName. \n" +
         "        ?poi :type ?poiType. \n" +
         "    }\n" +
-        "    FILTER(regex(str(?track), \"swt-trk-0ebb5ec0-b5c4-4883-9633-b84cd10bce38\" ) )\n" +
+        "    FILTER(regex(str(?track), \""+req.params.id+"\" ) )\n" +
         "} \n" +
         "ORDER BY DESC(?time)\n" +
         "LIMIT 1000 ";
