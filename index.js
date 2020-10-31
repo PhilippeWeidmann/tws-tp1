@@ -3,9 +3,11 @@ const fs = require('fs');
 const {v4: uuid} = require('uuid');
 const axios = require('axios').default;
 const SparqlClient = require('sparql-http-client')
+const cors = require('cors')
 
 const express = require('express');
 const app = express();
+app.use(cors())
 const port = 3000
 
 const schemeHeader = "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n" +
