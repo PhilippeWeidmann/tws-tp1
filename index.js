@@ -250,7 +250,9 @@ app.get('/tracks', function (req, res) {
         })
 
         stream.on('finish', row => {
-            let formattedResults = rows.map((row) => { return {name: row.name.value, id: row.track.value.replace('http://cui.unige.ch/', '')}});
+            let formattedResults = rows.map((row) => {
+                return {name: row.name.value, id: row.track.value.replace('http://cui.unige.ch/', '')}
+            });
             res.json(formattedResults);
         })
 
@@ -277,7 +279,7 @@ app.get('/tracks/:id', function (req, res) {
         "        ?poi :name ?poiName. \n" +
         "        ?poi :type ?poiType. \n" +
         "    }\n" +
-        "    FILTER(regex(str(?track), \""+req.params.id+"\" ) )\n" +
+        "    FILTER(regex(str(?track), \"" + req.params.id + "\" ) )\n" +
         "} \n" +
         "ORDER BY DESC(?time)\n" +
         "LIMIT 1000 ";
@@ -289,25 +291,26 @@ app.get('/tracks/:id', function (req, res) {
         })
 
         stream.on('finish', row => {
-           let formattedResults = rows.map((row) => {
-               let poiName = null;
-               let poiType = null;
-               let waypointName = null;
+            let formattedResults = rows.map((row) => {
+                let poiName = null;
+                let poiType = null;
+                let waypointName = null;
 
-               if (row.waypoint) {
-                   waypointName = row.waypointName.value;
-               }
-               if (row.poi) {
-                   poiName = row.poiName.value;
-                   poiType = row.poiType.value;
-               }
-               return {
-                lat: row.lat.value,
-                lon: row.lat.value,
-                waypointName: waypointName,
-                poiName: poiName,
-                poiType: poiType
-            }});
+                if (row.waypoint) {
+                    waypointName = row.waypointName.value;
+                }
+                if (row.poi) {
+                    poiName = row.poiName.value;
+                    poiType = row.poiType.value;
+                }
+                return {
+                    lat: row.lat.value,
+                    lon: row.lon.value,
+                    waypointName: waypointName,
+                    poiName: poiName,
+                    poiType: poiType
+                }
+            });
             res.json(formattedResults);
         })
 
@@ -318,16 +321,68 @@ app.get('/tracks/:id', function (req, res) {
 });
 
 app.get('/tracks/:id/dbpedia', function (req, res) {
-    const query = "SELECT DISTINCT * WHERE { \n" +
-        "?s geo:lat ?la . \n" +
-        "?s geo:long ?lo . \n" +
-        "?s dbo:place ?place .\n" +
-        "?place rdfs:label ?placeName.\n" +
-        "?s dbo:abstract ?placeAbstract.\n" +
-        "FILTER(regex(str(?placeName), \"Premier Empire\")) . } LIMIT 100";
-    axios.get('http://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=' + query).then((result) => {
-        res.json(result.data.results.bindings);
-    });
+    const query = "PREFIX : <http://cui.unige.ch/>\n" +
+        "SELECT * WHERE { \n" +
+        "    ?track a :Track.\n" +
+        "    ?track :trackpoints ?trackpoints.\n" +
+        "    ?trackpoints :lat ?lat.\n" +
+        "    ?trackpoints :lon ?lon.\n" +
+        "    ?trackpoints :time ?time.\n" +
+        "    OPTIONAL {\n" +
+        "    \t?trackpoints :hasWaypoint ?waypoint.\n" +
+        "        ?waypoint :name ?waypointName.  \n" +
+        "    }\n" +
+        "    OPTIONAL {\n" +
+        "        ?trackpoints :hasClosePOI ?poi.\n" +
+        "        ?poi :name ?poiName. \n" +
+        "        ?poi :type ?poiType. \n" +
+        "    }\n" +
+        "    FILTER(regex(str(?track), \"" + req.params.id + "\" ) )\n" +
+        "} \n" +
+        "ORDER BY DESC(?time)\n" +
+        "LIMIT 1000 ";
 
+    client.query.select(query).then(stream => {
+        let rows = [];
+        stream.on('data', row => {
+            rows.push(row);
+        })
 
+        stream.on('finish', row => {
+            let formattedResults = rows.map((row) => {
+                return {
+                    lat: row.lat.value,
+                    lon: row.lon.value,
+                }
+            });
+            let bounds = findBounds(formattedResults);
+            const query = "SELECT DISTINCT * WHERE { " +
+                "?s geo:lat ?la . ?s geo:long ?lo .\n" +
+                "?s foaf:name ?placeName.\n" +
+                "?s dbo:abstract ?placeAbstract.\n" +
+                "FILTER(?la>" + bounds.bottomLeft.lat + " AND ?la<" + bounds.topRight.lat + " AND ?lo>" + bounds.bottomLeft.lon + " AND ?lo<" + bounds.topRight.lon + ") . } LIMIT 100";
+            axios.get('http://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=' + query).then((result) => {
+                let places = [];
+                for (let place of result.data.results.bindings) {
+                    if (place.placeAbstract) {
+                        if (place.placeAbstract["xml:lang"] == "fr") {
+                            if (place.la && place.lo && place.placeName) {
+                                places.push({
+                                    name: place.placeName.value,
+                                    lat: place.la.value,
+                                    lon: place.lo.value,
+                                    abstract: place.placeAbstract.value
+                                });
+                            }
+                        }
+                    }
+                }
+                res.json(places);
+            });
+        })
+
+        stream.on('error', err => {
+            console.error(err);
+        })
+    })
 });
