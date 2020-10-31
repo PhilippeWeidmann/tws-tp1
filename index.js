@@ -211,24 +211,26 @@ function generateSchemeForGpx(name) {
     });
 }
 
-
-let gpxFiles = ['4sDDFdd4cjA', 'btSeByOExEc', 'kmrcRbHcMpg', 'PO21QxqG2co', 'pRAjjKqHwzQ', 'rx1-4gf5lts', 'tIRn_qJSB5s', 'UAQjXL9WRKY'];
-let promises = [];
-gpxFiles.forEach(file => {
-    promises.push(generateSchemeForGpx(file));
-});
-Promise.all(promises).then(gpxSchemes => {
-    let globalScheme = gpxSchemes.reduce((a, b) => a + '\n' + b, '');
-    fs.writeFile('scheme.ttl', globalScheme, function (err) {
-        if (err) throw err;
-        console.log('Saved!');
-    });
-});
-
 const client = new SparqlClient({endpointUrl: 'http://localhost:7200/repositories/TWS-GPX'});
 
 app.listen(port, () => {
-})
+});
+
+app.get('/generate', function (req, res) {
+    let gpxFiles = ['4sDDFdd4cjA', 'btSeByOExEc', 'kmrcRbHcMpg', 'PO21QxqG2co', 'pRAjjKqHwzQ', 'rx1-4gf5lts', 'tIRn_qJSB5s', 'UAQjXL9WRKY'];
+    let promises = [];
+    gpxFiles.forEach(file => {
+        promises.push(generateSchemeForGpx(file));
+    });
+    Promise.all(promises).then(gpxSchemes => {
+        let globalScheme = gpxSchemes.reduce((a, b) => a + '\n' + b, '');
+        fs.writeFile('scheme.ttl', globalScheme, function (err) {
+            if (err) throw err;
+            console.log('Saved!');
+            res.json('Generation done');
+        });
+    });
+});
 
 app.get('/tracks', function (req, res) {
     const query = "PREFIX : <http://cui.unige.ch/>\n" +
@@ -284,6 +286,7 @@ app.get('/tracks/:id/dbpedia', function (req, res) {
         "?s geo:long ?lo . \n" +
         "?s dbo:place ?place .\n" +
         "?place rdfs:label ?placeName.\n" +
+        "?s dbo:abstract ?placeAbstract.\n" +
         "FILTER(regex(str(?placeName), \"Premier Empire\")) . } LIMIT 100";
     axios.get('http://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=' + query).then((result) => {
         res.json(result.data.results.bindings);
