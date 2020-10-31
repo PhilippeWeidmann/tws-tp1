@@ -8,7 +8,7 @@ const cors = require('cors');
 const express = require('express');
 const app = express();
 app.use(cors());
-const port = 3000;
+const port = 2999;
 
 const schemeHeader = "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n" +
     "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.\n" +
