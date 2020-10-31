@@ -29,7 +29,8 @@ function parseGPX(gpxFile) {
         let parsedPoint = {
             lat: Number(point.attrsMap["@_lat"]),
             lon: Number(point.attrsMap["@_lon"]),
-            ele: point.child.ele[0].val
+            ele: point.child.ele[0].val,
+            time: Date.parse(point.child.time[0].val)
         };
         parsedPoints.push(parsedPoint);
     });
@@ -58,6 +59,7 @@ function generateGraphDBPoint(point) {
     schemeString += pointId + ' :lat ' + point.lat + ' .\n';
     schemeString += pointId + ' :lon ' + point.lon + ' .\n';
     schemeString += pointId + ' :ele ' + point.ele + ' .\n';
+    schemeString += pointId + ' :time ' + point.time + ' .\n';
     if (point.poi) {
         let generatedPOI = generateGraphDBPoi(point.poi);
         schemeString += generatedPOI.value;
@@ -260,13 +262,25 @@ app.get('/tracks', function (req, res) {
 
 app.get('/tracks/:id', function (req, res) {
     const query = "PREFIX : <http://cui.unige.ch/>\n" +
-        "select * where { \n" +
-        "\t?track a :Track.\n" +
+        "SELECT * WHERE { \n" +
+        "    ?track a :Track.\n" +
         "    ?track :trackpoints ?trackpoints.\n" +
         "    ?trackpoints :lat ?lat.\n" +
         "    ?trackpoints :lon ?lon.\n" +
-        "    FILTER(regex(str(?track), \"" + req.params.id + "\" ) )\n" +
-        "} offset 0 limit 10 \n";
+        "    ?trackpoints :time ?time.\n" +
+        "    OPTIONAL {\n" +
+        "    \t?trackpoints :hasWaypoint ?waypoint.\n" +
+        "        ?waypoint :name ?waypointName.  \n" +
+        "    }\n" +
+        "    OPTIONAL {\n" +
+        "        ?trackpoints :hasClosePOI ?poi.\n" +
+        "        ?poi :name ?poiName. \n" +
+        "        ?poi :type ?poiType. \n" +
+        "    }\n" +
+        "    FILTER(regex(str(?track), \"swt-trk-0ebb5ec0-b5c4-4883-9633-b84cd10bce38\" ) )\n" +
+        "} \n" +
+        "ORDER BY DESC(?time)\n" +
+        "LIMIT 1000 ";
 
     client.query.select(query).then(stream => {
         let rows = [];
@@ -275,7 +289,25 @@ app.get('/tracks/:id', function (req, res) {
         })
 
         stream.on('finish', row => {
-            let formattedResults = rows.map((row) => { return {lat: row.lat.value, lon: row.lat.value, id: row.trackpoints.value.replace('http://cui.unige.ch/', '')}});
+           let formattedResults = rows.map((row) => {
+               let poiName = null;
+               let poiType = null;
+               let waypointName = null;
+
+               if (row.waypoint) {
+                   waypointName = row.waypointName.value;
+               }
+               if (row.poi) {
+                   poiName = row.poiName.value;
+                   poiType = row.poiType.value;
+               }
+               return {
+                lat: row.lat.value,
+                lon: row.lat.value,
+                waypointName: waypointName,
+                poiName: poiName,
+                poiType: poiType
+            }});
             res.json(formattedResults);
         })
 
