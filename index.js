@@ -39,11 +39,12 @@ function parseGPX(gpxFile) {
             ele: waypoint.child.ele[0].val,
             name: waypoint.child.name[0].val
         };
-        parsedPoints.forEach(point => {
+        for (let point of parsedPoints) {
             if (point.lat === parsedWaypoint.lat && point.lon === parsedWaypoint.lon) {
                 point.waypoint = parsedWaypoint;
+                break;
             }
-        });
+        }
     });
 
     return {name: trackName, trackPoints: parsedPoints};
