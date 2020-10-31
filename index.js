@@ -3,12 +3,12 @@ const fs = require('fs');
 const {v4: uuid} = require('uuid');
 const axios = require('axios').default;
 const SparqlClient = require('sparql-http-client')
-const cors = require('cors')
+const cors = require('cors');
 
 const express = require('express');
 const app = express();
-app.use(cors())
-const port = 3000
+app.use(cors());
+const port = 3000;
 
 const schemeHeader = "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n" +
     "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.\n" +
@@ -248,7 +248,8 @@ app.get('/tracks', function (req, res) {
         })
 
         stream.on('finish', row => {
-            res.json(rows);
+            let formattedResults = rows.map((row) => { return {name: row.name.value, id: row.track.value.replace('http://cui.unige.ch/', '')}});
+            res.json(formattedResults);
         })
 
         stream.on('error', err => {
@@ -274,7 +275,8 @@ app.get('/tracks/:id', function (req, res) {
         })
 
         stream.on('finish', row => {
-            res.json(rows);
+            let formattedResults = rows.map((row) => { return {lat: row.lat.value, lon: row.lat.value, id: row.trackpoints.value.replace('http://cui.unige.ch/', '')}});
+            res.json(formattedResults);
         })
 
         stream.on('error', err => {
