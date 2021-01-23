@@ -61,7 +61,10 @@ function inferDurationRecursive() {
     async function inferDuration() {
         const inferDurationQuery = prefix + "insert {?route :duration ?totalDuration.}\n" +
             "where {\n" +
-            "    ?route a :Route. ?route :firstElement ?first. ?route :nextElement ?next. ?first :duration ?firstDuration. ?next :duration ?nextDuration\n" +
+            "    ?route a :Route. ?route :firstElement ?first. " +
+            "    ?route :nextElement ?next. " +
+            "    ?first :duration ?firstDuration. " +
+            "    ?next :duration ?nextDuration\n" +
             "    bind(?firstDuration + ?nextDuration AS ?totalDuration)\n" +
             "}"
         return await client.query.update(inferDurationQuery);
