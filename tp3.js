@@ -4,7 +4,7 @@ const client = new SparqlClient({
     updateUrl: 'http://localhost:7200/repositories/Ski-Tp3/statements'
 });
 
-const prefix = "prefix ex: <http://www.semanticweb.org/tws/tp2#>\n" +
+const prefix = "prefix : <http://www.semanticweb.org/tws/tp2#>\n" +
     "prefix owl: <http://www.w3.org/2002/07/owl#>\n" +
     "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
     "prefix xml: <http://www.w3.org/XML/1998/namespace>\n" +
@@ -26,17 +26,17 @@ setupDifficulty().then(() => {
 })
 
 async function setupDifficulty() {
-    const diffcultyBlueRunQuery = prefix + "INSERT {?r ex:difficulty 1 .}\n" +
-        "WHERE{?r a ex:BlueRun .}"
+    const diffcultyBlueRunQuery = prefix + "INSERT {?r :difficulty 1 .}\n" +
+        "WHERE{?r a :BlueRun .}"
     await client.query.update(diffcultyBlueRunQuery)
-    const diffcultyRedRunQuery = prefix + "INSERT {?r ex:difficulty 2 .}\n" +
-        "WHERE{?r a ex:RedRun .}"
+    const diffcultyRedRunQuery = prefix + "INSERT {?r :difficulty 2 .}\n" +
+        "WHERE{?r a :RedRun .}"
     await client.query.update(diffcultyRedRunQuery)
-    const diffcultyBlackRunQuery = prefix + "INSERT {?r ex:difficulty 3 .}\n" +
-        "WHERE{?r a ex:BlackRun .}"
+    const diffcultyBlackRunQuery = prefix + "INSERT {?r :difficulty 3 .}\n" +
+        "WHERE{?r a :BlackRun .}"
     await client.query.update(diffcultyBlackRunQuery)
-    const diffcultyLiftQuery = prefix + "INSERT {?r ex:difficulty 0 .}\n" +
-        "WHERE{?r a ex:SkiLift .}"
+    const diffcultyLiftQuery = prefix + "INSERT {?r :difficulty 0 .}\n" +
+        "WHERE{?r a :SkiLift .}"
     await client.query.update(diffcultyLiftQuery)
 }
 
@@ -59,9 +59,9 @@ function inferDurationRecursive() {
     });
 
     async function inferDuration() {
-        const inferDurationQuery = prefix + "insert {?x ex:duration ?tt.}\n" +
+        const inferDurationQuery = prefix + "insert {?x :duration ?tt.}\n" +
             "where {\n" +
-            "    ?x a ex:Route. ?x ex:hasFirstElement ?fx. ?x ex:hasRest ?rx. ?fx ex:duration ?dfx. ?rx ex:duration ?drx\n" +
+            "    ?x a :Route. ?x :firstElement ?fx. ?x :nextElement ?rx. ?fx :duration ?dfx. ?rx :duration ?drx\n" +
             "    bind(?dfx + ?drx AS ?tt)\n" +
             "}"
         return await client.query.update(inferDurationQuery);
@@ -70,8 +70,8 @@ function inferDurationRecursive() {
     async function getRouteDurationCount() {
         const routeDurationQuery = prefix + "select (COUNT(?o) AS ?rowCount)\n" +
             "where { \n" +
-            "    ?s a ex:Route.\n" +
-            "    ?s ex:duration ?o .\n" +
+            "    ?s a :Route.\n" +
+            "    ?s :duration ?o .\n" +
             "} ";
         let stream = await client.query.select(routeDurationQuery);
         let rowCount = 0;
@@ -111,13 +111,13 @@ function inferDifficultyRecursive() {
     });
 
     async function inferDifficulty() {
-        const inferDifficultyQuery = prefix + "insert  {?x ex:difficulty ?dx.}\n" +
+        const inferDifficultyQuery = prefix + "insert  {?x :difficulty ?dx.}\n" +
             "where {\n" +
-            "    ?x a ex:Route.\n" +
-            "    ?x ex:hasFirstElement ?fx.\n" +
-            "    ?x ex:hasRest ?rx.\n" +
-            "    ?fx ex:difficulty ?dfx.\n" +
-            "    ?rx ex:difficulty ?drx.\n" +
+            "    ?x a :Route.\n" +
+            "    ?x :firstElement ?fx.\n" +
+            "    ?x :nextElement ?rx.\n" +
+            "    ?fx :difficulty ?dfx.\n" +
+            "    ?rx :difficulty ?drx.\n" +
             "    bind(if(?dfx >= ?drx, ?dfx, ?drx) as ?dx)\n" +
             "}"
         return await client.query.update(inferDifficultyQuery);
@@ -126,8 +126,8 @@ function inferDifficultyRecursive() {
     async function getRouteDifficultyCount() {
         const routeDifficultyQuery = prefix + "select (COUNT(?o) AS ?rowCount)\n" +
             "where { \n" +
-            "    ?s a ex:Route.\n" +
-            "    ?s ex:difficulty ?o .\n" +
+            "    ?s a :Route.\n" +
+            "    ?s :difficulty ?o .\n" +
             "} ";
         let stream = await client.query.select(routeDifficultyQuery);
         let rowCount = 0;
@@ -175,17 +175,17 @@ async function inferBelongsTo() {
     });
 
     async function inferBelongsToRest() {
-        const inferBelongsToRestQuery = prefix + "insert {?brx ex:belongsTo ?x.}\n" +
+        const inferBelongsToRestQuery = prefix + "insert {?brx :belongsTo ?x.}\n" +
             "where {\n" +
-            "    ?x a ex:Route. ?x ex:hasRest ?rx. ?brx ex:belongsTo ?rx.\n" +
+            "    ?x a :Route. ?x :nextElement ?rx. ?brx :belongsTo ?rx.\n" +
             "}"
         return await client.query.update(inferBelongsToRestQuery);
     }
 
     async function inferBelongsToFirst() {
-        const inferBelongsToFirstQuery = prefix + "insert {?fx ex:belongsTo ?x.}\n" +
+        const inferBelongsToFirstQuery = prefix + "insert {?fx :belongsTo ?x.}\n" +
             "where {\n" +
-            "    ?x a ex:Route. ?x ex:hasFirstElement ?fx.\n" +
+            "    ?x a :Route. ?x :firstElement ?fx.\n" +
             "}"
         return await client.query.update(inferBelongsToFirstQuery);
     }
@@ -193,7 +193,7 @@ async function inferBelongsTo() {
     async function getBelongsToRestCount() {
         const belongsToRestQuery = prefix + "select (COUNT(?belonger) AS ?rowCount)\n" +
             "where { \n" +
-            "    ?belonger ex:belongsTo ?route.\n" +
+            "    ?belonger :belongsTo ?route.\n" +
             "} ";
         let stream = await client.query.select(belongsToRestQuery);
         let rowCount = 0;
@@ -228,9 +228,9 @@ async function inferBelongsToPlace() {
     });
 
     async function inferBelongsToPlaceRequest() {
-        const inferBelongsToPlaceQuery = prefix + "insert {?p ex:belongsTo ?x.}\n" +
+        const inferBelongsToPlaceQuery = prefix + "insert {?p :belongsTo ?x.}\n" +
             "where {\n" +
-            "    ?p a ex:Place. ?p (ex:isStartOf | ex:isEndOf) ?s. ?s ex:belongsTo ?x.\n" +
+            "    ?p a :Place. ?p (:isStartOf | :isEndOf) ?s. ?s :belongsTo ?x.\n" +
             "}"
         return await client.query.update(inferBelongsToPlaceQuery);
     }
@@ -252,9 +252,9 @@ function inferBelongsToRestaurant() {
     });
 
     async function insertBelongsToRestaurant() {
-        const inferBelongsToRestaurantQuery = prefix + "insert {?r ex:belongsTo ?x.}\n" +
+        const inferBelongsToRestaurantQuery = prefix + "insert {?r :belongsTo ?x.}\n" +
             "where {\n" +
-            "    ?r a ex:Restaurant. ?r ex:locatedAt ?p. ?p ex:belongsTo ?x.\n" +
+            "    ?r a :Restaurant. ?r :locatedAt ?p. ?p :belongsTo ?x.\n" +
             "}"
         return await client.query.update(inferBelongsToRestaurantQuery);
     }
