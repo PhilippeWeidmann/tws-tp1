@@ -26,17 +26,17 @@ setupDifficulty().then(() => {
 })
 
 async function setupDifficulty() {
-    const diffcultyBlueRunQuery = prefix + "INSERT {?r :difficulty 1 .}\n" +
-        "WHERE{?r a :BlueRun .}"
+    const diffcultyBlueRunQuery = prefix + "INSERT {?run :difficulty 1 .}\n" +
+        "WHERE{?run a :BlueRun .}"
     await client.query.update(diffcultyBlueRunQuery)
-    const diffcultyRedRunQuery = prefix + "INSERT {?r :difficulty 2 .}\n" +
-        "WHERE{?r a :RedRun .}"
+    const diffcultyRedRunQuery = prefix + "INSERT {?run :difficulty 2 .}\n" +
+        "WHERE{?run a :RedRun .}"
     await client.query.update(diffcultyRedRunQuery)
-    const diffcultyBlackRunQuery = prefix + "INSERT {?r :difficulty 3 .}\n" +
-        "WHERE{?r a :BlackRun .}"
+    const diffcultyBlackRunQuery = prefix + "INSERT {?run :difficulty 3 .}\n" +
+        "WHERE{?run a :BlackRun .}"
     await client.query.update(diffcultyBlackRunQuery)
-    const diffcultyLiftQuery = prefix + "INSERT {?r :difficulty 0 .}\n" +
-        "WHERE{?r a :SkiLift .}"
+    const diffcultyLiftQuery = prefix + "INSERT {?run :difficulty 0 .}\n" +
+        "WHERE{?run a :SkiLift .}"
     await client.query.update(diffcultyLiftQuery)
 }
 
