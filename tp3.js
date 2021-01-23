@@ -59,19 +59,19 @@ function inferDurationRecursive() {
     });
 
     async function inferDuration() {
-        const inferDurationQuery = prefix + "insert {?x :duration ?tt.}\n" +
+        const inferDurationQuery = prefix + "insert {?route :duration ?totalDuration.}\n" +
             "where {\n" +
-            "    ?x a :Route. ?x :firstElement ?fx. ?x :nextElement ?rx. ?fx :duration ?dfx. ?rx :duration ?drx\n" +
-            "    bind(?dfx + ?drx AS ?tt)\n" +
+            "    ?route a :Route. ?route :firstElement ?first. ?route :nextElement ?next. ?first :duration ?firstDuration. ?next :duration ?nextDuration\n" +
+            "    bind(?firstDuration + ?nextDuration AS ?totalDuration)\n" +
             "}"
         return await client.query.update(inferDurationQuery);
     }
 
     async function getRouteDurationCount() {
-        const routeDurationQuery = prefix + "select (COUNT(?o) AS ?rowCount)\n" +
+        const routeDurationQuery = prefix + "select (COUNT(?duration) AS ?rowCount)\n" +
             "where { \n" +
-            "    ?s a :Route.\n" +
-            "    ?s :duration ?o .\n" +
+            "    ?route a :Route.\n" +
+            "    ?route :duration ?duration .\n" +
             "} ";
         let stream = await client.query.select(routeDurationQuery);
         let rowCount = 0;
