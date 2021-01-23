@@ -114,23 +114,23 @@ function inferDifficultyRecursive() {
     });
 
     async function inferDifficulty() {
-        const inferDifficultyQuery = prefix + "insert  {?x :difficulty ?dx.}\n" +
+        const inferDifficultyQuery = prefix + "insert  {?route :difficulty ?maxDifficulty.}\n" +
             "where {\n" +
-            "    ?x a :Route.\n" +
-            "    ?x :firstElement ?fx.\n" +
-            "    ?x :nextElement ?rx.\n" +
-            "    ?fx :difficulty ?dfx.\n" +
-            "    ?rx :difficulty ?drx.\n" +
-            "    bind(if(?dfx >= ?drx, ?dfx, ?drx) as ?dx)\n" +
+            "    ?route a :Route.\n" +
+            "    ?route :firstElement ?first.\n" +
+            "    ?route :nextElement ?next.\n" +
+            "    ?first :difficulty ?firstDifficulty.\n" +
+            "    ?next :difficulty ?nextDifficulty.\n" +
+            "    bind(if(?firstDifficulty >= ?nextDifficulty, ?firstDifficulty, ?nextDifficulty) as ?maxDifficulty)\n" +
             "}"
         return await client.query.update(inferDifficultyQuery);
     }
 
     async function getRouteDifficultyCount() {
-        const routeDifficultyQuery = prefix + "select (COUNT(?o) AS ?rowCount)\n" +
+        const routeDifficultyQuery = prefix + "select (COUNT(?difficulty) AS ?rowCount)\n" +
             "where { \n" +
-            "    ?s a :Route.\n" +
-            "    ?s :difficulty ?o .\n" +
+            "    ?route a :Route.\n" +
+            "    ?route :difficulty ?difficulty .\n" +
             "} ";
         let stream = await client.query.select(routeDifficultyQuery);
         let rowCount = 0;
