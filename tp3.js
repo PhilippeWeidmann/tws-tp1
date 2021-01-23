@@ -13,6 +13,7 @@ const prefix = "prefix ex: <http://www.semanticweb.org/tws/tp2#>\n" +
 
 console.log("Setting up difficulty")
 setupDifficulty().then(() => {
+    console.log("Done setting up difficulty")
     inferDurationRecursive()
     inferDifficultyRecursive()
     inferBelongsTo().then(() => {
@@ -38,7 +39,6 @@ async function setupDifficulty() {
         "WHERE{?r a ex:SkiLift .}"
     await client.query.update(diffcultyLiftQuery)
 }
-console.log("Done setting up difficulty")
 
 /*
 * Begin Infer Duration
