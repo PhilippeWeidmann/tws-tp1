@@ -231,9 +231,9 @@ async function inferBelongsToPlace() {
     });
 
     async function inferBelongsToPlaceRequest() {
-        const inferBelongsToPlaceQuery = prefix + "insert {?p :belongsTo ?x.}\n" +
+        const inferBelongsToPlaceQuery = prefix + "insert {?place :belongsTo ?route.}\n" +
             "where {\n" +
-            "    ?p a :Place. ?p (:isStartOf | :isEndOf) ?s. ?s :belongsTo ?x.\n" +
+            "    ?place a :Place. ?place (:isStartOf | :isEndOf) ?skiLift. ?skiLift :belongsTo ?route.\n" +
             "}"
         return await client.query.update(inferBelongsToPlaceQuery);
     }
@@ -255,9 +255,9 @@ function inferBelongsToRestaurant() {
     });
 
     async function insertBelongsToRestaurant() {
-        const inferBelongsToRestaurantQuery = prefix + "insert {?r :belongsTo ?x.}\n" +
+        const inferBelongsToRestaurantQuery = prefix + "insert {?restaurant :belongsTo ?route.}\n" +
             "where {\n" +
-            "    ?r a :Restaurant. ?r :locatedAt ?p. ?p :belongsTo ?x.\n" +
+            "    ?restaurant a :Restaurant. ?restaurant :locatedAt ?place. ?place :belongsTo ?route.\n" +
             "}"
         return await client.query.update(inferBelongsToRestaurantQuery);
     }
