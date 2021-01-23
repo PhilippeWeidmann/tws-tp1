@@ -11,10 +11,38 @@ const prefix = "prefix ex: <http://www.semanticweb.org/tws/tp2#>\n" +
     "prefix xsd: <http://www.w3.org/2001/XMLSchema#>\n" +
     "prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n"
 
+console.log("Setting up difficulty")
+setupDifficulty().then(() => {
+    inferDurationRecursive()
+    inferDifficultyRecursive()
+    inferBelongsTo().then(() => {
+        console.log("Done inferBelongsTo")
+    })
+    inferBelongsToPlace().then(() => {
+        console.log("Done inferBelongsToPlace")
+    })
+    inferBelongsToRestaurant()
+})
+
+async function setupDifficulty() {
+    const diffcultyBlueRunQuery = prefix + "INSERT {?r ex:difficulty 1 .}\n" +
+        "WHERE{?r a ex:BlueRun .}"
+    await client.query.update(diffcultyBlueRunQuery)
+    const diffcultyRedRunQuery = prefix + "INSERT {?r ex:difficulty 2 .}\n" +
+        "WHERE{?r a ex:RedRun .}"
+    await client.query.update(diffcultyRedRunQuery)
+    const diffcultyBlackRunQuery = prefix + "INSERT {?r ex:difficulty 3 .}\n" +
+        "WHERE{?r a ex:BlackRun .}"
+    await client.query.update(diffcultyBlackRunQuery)
+    const diffcultyLiftQuery = prefix + "INSERT {?r ex:difficulty 0 .}\n" +
+        "WHERE{?r a ex:SkiLift .}"
+    await client.query.update(diffcultyLiftQuery)
+}
+console.log("Done setting up difficulty")
+
 /*
 * Begin Infer Duration
  */
-inferDurationRecursive()
 
 function inferDurationRecursive() {
     getRouteDurationCount().then(count => {
@@ -67,7 +95,6 @@ function inferDurationRecursive() {
 /*
 * Begin Infer Difficulty
  */
-inferDifficultyRecursive()
 
 function inferDifficultyRecursive() {
     getRouteDifficultyCount().then(count => {
@@ -124,9 +151,6 @@ function inferDifficultyRecursive() {
 /*
 * Begin Infer Belongs To
  */
-inferBelongsTo().then(() => {
-    console.log("Done inferBelongsTo")
-})
 
 async function inferBelongsTo() {
     return new Promise((resolve, reject) => {
@@ -193,9 +217,6 @@ async function inferBelongsTo() {
 /*
 * Begin Infer Belongs To Place
  */
-inferBelongsToPlace().then(() => {
-    console.log("Done inferBelongsToPlace")
-})
 
 async function inferBelongsToPlace() {
     return new Promise((resolve, reject) => {
@@ -222,7 +243,6 @@ async function inferBelongsToPlace() {
 /*
 * Begin Infer Belongs To Restaurant
  */
-inferBelongsToRestaurant()
 
 function inferBelongsToRestaurant() {
     inferBelongsToPlace().then(() => {
