@@ -178,17 +178,17 @@ async function inferBelongsTo() {
     });
 
     async function inferBelongsToRest() {
-        const inferBelongsToRestQuery = prefix + "insert {?brx :belongsTo ?x.}\n" +
+        const inferBelongsToRestQuery = prefix + "insert {?belonger :belongsTo ?route.}\n" +
             "where {\n" +
-            "    ?x a :Route. ?x :nextElement ?rx. ?brx :belongsTo ?rx.\n" +
+            "    ?route a :Route. ?route :nextElement ?next. ?belonger :belongsTo ?next.\n" +
             "}"
         return await client.query.update(inferBelongsToRestQuery);
     }
 
     async function inferBelongsToFirst() {
-        const inferBelongsToFirstQuery = prefix + "insert {?fx :belongsTo ?x.}\n" +
+        const inferBelongsToFirstQuery = prefix + "insert {?belonger :belongsTo ?route.}\n" +
             "where {\n" +
-            "    ?x a :Route. ?x :firstElement ?fx.\n" +
+            "    ?route a :Route. ?route :firstElement ?belonger.\n" +
             "}"
         return await client.query.update(inferBelongsToFirstQuery);
     }
