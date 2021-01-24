@@ -1,10 +1,10 @@
 {
-  "name": "tws-tp1",
+  "name": "tws-tp3",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node tp3.js",
     "test": "nodemon index.js"
   },
   "author": "Philippe & Milo",
