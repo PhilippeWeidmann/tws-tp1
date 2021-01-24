@@ -2,10 +2,10 @@
   "name": "tws-tp3",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "tp3.js",
   "scripts": {
     "start": "node tp3.js",
-    "test": "nodemon index.js"
+    "test": "nodemon tp3.js"
   },
   "author": "Philippe & Milo",
   "license": "ISC",
